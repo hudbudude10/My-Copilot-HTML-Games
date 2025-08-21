@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Pong</title>
+  <style>
+    body {
+      text-align: center;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      background: #000;
+      display: block;
+      margin: 20px auto;
+    }
+    #playButton {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      background: #0f0;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to Pong!</h1>
+  <canvas id="pong" width="600" height="400"></canvas>
+  <button id="playButton">Play</button>
+
+  <script>
+    const canvas = document.getElementById('pong');
+    const ctx = canvas.getContext('2d');
+    const playButton = document.getElementById('playButton');
+
+    const paddleWidth = 10, paddleHeight = 80;
+    let playerY = canvas.height / 2 - paddleHeight / 2;
+    let aiY = canvas.height / 2 - paddleHeight / 2;
+
+    let playerScore = 0;
+    let aiScore = 0;
+    let gameStarted = false;
+
+    const ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      radius: 7,
+      speedX: 2.5,
+      speedY: 2.5
+    };
+
+    const keys = {
+      ArrowUp: false,
+      ArrowDown: false
+    };
+
+    document.addEventListener('keydown', e => {
+      if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+    });
+
+    document.addEventListener('keyup', e => {
+      if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+    });
+
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function drawBall(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawText(text, x, y) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '24px Arial';
+      ctx.fillText(text, x, y);
+    }
+
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.speedX = -ball.speedX;
+      ball.speedY = 2.5 * (Math.random() > 0.5 ? 1 : -1);
+    }
+
+    function update() {
+      // Smooth paddle movement
+      if (keys.ArrowUp) playerY -= 5;
+      if (keys.ArrowDown) playerY += 5;
+      playerY = Math.max(0, Math.min(canvas.height - paddleHeight, playerY));
+
+      // Ball movement
+      ball.x += ball.speedX;
+      ball.y += ball.speedY;
+
+      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.speedY = -ball.speedY;
+      }
+
+      // Easier AI with error
+      const aiError = Math.random() * 10 - 5;
+      aiY += (ball.y + aiError - (aiY + paddleHeight / 2)) * 0.03;
+      aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
+
+      // Paddle collisions
+      if (ball.x - ball.radius < 10 && ball.y > playerY && ball.y < playerY + paddleHeight) {
+        ball.speedX = -ball.speedX;
+      }
+
+      if (ball.x + ball.radius > canvas.width - 10 && ball.y > aiY && ball.y < aiY + paddleHeight) {
+        ball.speedX = -ball.speedX;
+      }
+
+      // Scoring
+      if (ball.x < 0) {
+        aiScore++;
+        resetBall();
+      }
+
+      if (ball.x > canvas.width) {
+        playerScore++;
+        resetBall();
+      }
+    }
+
+    function drawGame() {
+      drawRect(0, 0, canvas.width, canvas.height, '#000');
+      drawRect(0, playerY, paddleWidth, paddleHeight, '#fff');
+      drawRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight, '#fff');
+      drawBall(ball.x, ball.y, ball.radius, '#fff');
+      drawText(`${playerScore} : ${aiScore}`, canvas.width / 2 - 30, 30);
+    }
+
+    function drawTitleScreen() {
+      drawRect(0, 0, canvas.width, canvas.height, '#000');
+      drawText("PONG", canvas.width / 2 - 40, canvas.height / 2 - 20);
+      drawText("Click Play to Start", canvas.width / 2 - 90, canvas.height / 2 + 20);
+    }
+
+    function gameLoop() {
+      if (gameStarted) {
+        update();
+        drawGame();
+      } else {
+        drawTitleScreen();
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    playButton.addEventListener('click', () => {
+      gameStarted = true;
+      playButton.style.display = 'none';
+    });
+
+    gameLoop();
+  </script>
+</body>
+</html>
